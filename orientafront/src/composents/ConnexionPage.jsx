@@ -63,7 +63,7 @@ export default function ConnexionPage() {
     return newErrors;
   };
 
-  // Connexion avec API Laravel (sans token)
+  // Connexion avec API Laravel
   const handleLogin = async (email, password) => {
     try {
       const response = await axios.post(`${API_URL}/login`, {
@@ -173,11 +173,19 @@ export default function ConnexionPage() {
       if (result.success) {
         setSuccessMessage('Connexion réussie ! Redirection...');
         setTimeout(() => {
-          // Vérifier si le profil est complété
+          // Récupérer les données de l'utilisateur
           const userData = JSON.parse(localStorage.getItem('user') || '{}');
-          if (userData.profil_complete === 0 || userData.profil_complete === false) {
+          const userRole = userData.role || 'student';
+          
+          // Redirection selon le rôle
+          if (userRole === 'admin' || userRole === 'super_admin') {
+            // Rediriger vers le dashboard admin
+            navigate('/admin');
+          } else if (userData.profil_complete === 0 || userData.profil_complete === false) {
+            // Étudiant avec profil incomplet
             navigate('/profile');
           } else {
+            // Étudiant avec profil complet
             window.location.href = from;
           }
         }, 1000);
