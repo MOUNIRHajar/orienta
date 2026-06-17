@@ -14,7 +14,9 @@ export default function ConnexionPage() {
     password: '',
     firstName: '',
     lastName: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    telephone: '',
+    niveauEtude: ''
   });
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
@@ -54,6 +56,10 @@ export default function ConnexionPage() {
     else if (formData.password.length < 6) newErrors.password = "6 caractères minimum";
     if (!formData.confirmPassword) newErrors.confirmPassword = "Confirmez votre mot de passe";
     else if (formData.password !== formData.confirmPassword) newErrors.confirmPassword = "Les mots de passe ne correspondent pas";
+    if (formData.telephone && !/^[0-9]{10}$/.test(formData.telephone)) {
+      newErrors.telephone = "Numéro de téléphone invalide (10 chiffres)";
+    }
+    if (!formData.niveauEtude) newErrors.niveauEtude = "Veuillez sélectionner votre niveau d'étude";
     return newErrors;
   };
 
@@ -67,10 +73,8 @@ export default function ConnexionPage() {
       
       console.log('Réponse login:', response.data);
       
-      // Stockage des données utilisateur (même sans token)
       if (response.data.user) {
         localStorage.setItem('user', JSON.stringify(response.data.user));
-        // Créer un token fictif pour indiquer que l'utilisateur est connecté
         localStorage.setItem('token', 'connected_' + Date.now());
         localStorage.setItem('isAuthenticated', 'true');
       } else if (response.data.data && response.data.data.user) {
@@ -78,7 +82,6 @@ export default function ConnexionPage() {
         localStorage.setItem('token', 'connected_' + Date.now());
         localStorage.setItem('isAuthenticated', 'true');
       } else {
-        // Si la structure est différente, on stocke quand même une indication
         localStorage.setItem('user', JSON.stringify({ email: email }));
         localStorage.setItem('token', 'connected_' + Date.now());
         localStorage.setItem('isAuthenticated', 'true');
@@ -106,12 +109,13 @@ export default function ConnexionPage() {
         last_name: userData.lastName,
         email: userData.email,
         password: userData.password,
-        password_confirmation: userData.confirmPassword
+        password_confirmation: userData.confirmPassword,
+        telephone: userData.telephone,
+        niveau_etude: userData.niveauEtude
       });
       
       console.log('Réponse register:', response.data);
       
-      // Stockage des données utilisateur
       if (response.data.user) {
         localStorage.setItem('user', JSON.stringify(response.data.user));
         localStorage.setItem('token', 'connected_' + Date.now());
@@ -129,7 +133,7 @@ export default function ConnexionPage() {
         localStorage.setItem('isAuthenticated', 'true');
       }
       
-      return { success: true, data: response.data };
+      return { success: true, data: response.data, isNewUser: true };
     } catch (error) {
       console.error('Erreur register:', error);
       if (error.response) {
@@ -169,8 +173,13 @@ export default function ConnexionPage() {
       if (result.success) {
         setSuccessMessage('Connexion réussie ! Redirection...');
         setTimeout(() => {
-          // Redirection directe vers le questionnaire
-          window.location.href = from;
+          // Vérifier si le profil est complété
+          const userData = JSON.parse(localStorage.getItem('user') || '{}');
+          if (userData.profil_complete === 0 || userData.profil_complete === false) {
+            navigate('/profile');
+          } else {
+            window.location.href = from;
+          }
         }, 1000);
       } else {
         setApiError(result.message);
@@ -180,9 +189,10 @@ export default function ConnexionPage() {
       const result = await handleRegister(formData);
       
       if (result.success) {
-        setSuccessMessage('Inscription réussie ! Redirection...');
+        setSuccessMessage('Inscription réussie ! Redirection vers votre profil...');
         setTimeout(() => {
-          window.location.href = from;
+          // Redirection vers la page de profil après inscription
+          navigate('/profile');
         }, 1000);
       } else {
         if (result.validationErrors) {
@@ -196,6 +206,10 @@ export default function ConnexionPage() {
               formattedErrors.email = result.validationErrors.email[0];
             } else if (key === 'password') {
               formattedErrors.password = result.validationErrors.password[0];
+            } else if (key === 'telephone') {
+              formattedErrors.telephone = result.validationErrors.telephone[0];
+            } else if (key === 'niveau_etude') {
+              formattedErrors.niveauEtude = result.validationErrors.niveau_etude[0];
             }
           });
           setErrors(formattedErrors);
@@ -206,48 +220,6 @@ export default function ConnexionPage() {
       }
     }
   };
-
-  // Vérifier si l'utilisateur est déjà connecté
-
-  
-  const isAlreadyLoggedIn = localStorage.getItem('token') && localStorage.getItem('isAuthenticated');
-  
-  if (isAlreadyLoggedIn) {
-    return (
-      <section className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-white py-20 px-4 flex items-center justify-center">
-        <div className="max-w-md mx-auto text-center">
-          <div className="bg-white rounded-2xl shadow-xl p-8">
-            <div className="w-20 h-20 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">Déjà connecté</h2>
-            <p className="text-gray-600 mb-6">Vous êtes déjà connecté à votre compte.</p>
-            <div className="flex gap-4">
-              <button
-                onClick={() => window.location.href = from}
-                className="flex-1 py-3 bg-gradient-to-r from-blue-600 to-emerald-600 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-emerald-700 transition-all"
-              >
-                Accéder au questionnaire
-              </button>
-              <button
-                onClick={() => {
-                  localStorage.removeItem('token');
-                  localStorage.removeItem('user');
-                  localStorage.removeItem('isAuthenticated');
-                  window.location.reload();
-                }}
-                className="flex-1 py-3 bg-red-500 text-white font-semibold rounded-lg hover:bg-red-600 transition-all"
-              >
-                Se déconnecter
-              </button>
-            </div>
-          </div>
-        </div>
-      </section>
-    );
-  }
 
   return (
     <section className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-white py-20 px-4 relative overflow-hidden">
@@ -330,6 +302,48 @@ export default function ConnexionPage() {
                     />
                     {errors.firstName && <p className="text-red-500 text-xs mt-1">{errors.firstName}</p>}
                   </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Téléphone
+                  </label>
+                  <input
+                    type="tel"
+                    name="telephone"
+                    value={formData.telephone}
+                    onChange={handleChange}
+                    className={`w-full px-4 py-2 border-2 rounded-lg focus:outline-none focus:border-blue-400 transition-colors ${
+                      errors.telephone ? 'border-red-500 bg-red-50' : 'border-gray-200'
+                    }`}
+                    placeholder="0612345678"
+                  />
+                  {errors.telephone && <p className="text-red-500 text-xs mt-1">{errors.telephone}</p>}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Niveau d'étude <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    name="niveauEtude"
+                    value={formData.niveauEtude}
+                    onChange={handleChange}
+                    className={`w-full px-4 py-2 border-2 rounded-lg focus:outline-none focus:border-blue-400 transition-colors ${
+                      errors.niveauEtude ? 'border-red-500 bg-red-50' : 'border-gray-200'
+                    }`}
+                  >
+                    <option value="">Sélectionnez votre niveau</option>
+                    <option value="bac">Baccalauréat</option>
+                    <option value="bac+1">Bac +1</option>
+                    <option value="bac+2">Bac +2</option>
+                    <option value="bac+3">Bac +3 (Licence)</option>
+                    <option value="bac+4">Bac +4 (Master 1)</option>
+                    <option value="bac+5">Bac +5 (Master 2)</option>
+                    <option value="bac+6">Bac +6 et plus</option>
+                    <option value="autre">Autre</option>
+                  </select>
+                  {errors.niveauEtude && <p className="text-red-500 text-xs mt-1">{errors.niveauEtude}</p>}
                 </div>
               </>
             )}
@@ -431,13 +445,31 @@ export default function ConnexionPage() {
               {loading ? (
                 <div className="flex items-center justify-center gap-2">
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  <span>Connexion en cours...</span>
+                  <span>{isLogin ? 'Connexion en cours...' : 'Inscription en cours...'}</span>
                 </div>
               ) : (
                 isLogin ? 'Se connecter' : "S'inscrire"
               )}
             </button>
           </form>
+
+          {/* Lien pour basculer entre Connexion et Inscription */}
+          <div className="mt-6 text-center">
+            <p className="text-gray-600">
+              {isLogin ? "Vous n'avez pas de compte ?" : "Vous avez déjà un compte ?"}
+              <button
+                onClick={() => {
+                  setIsLogin(!isLogin);
+                  setErrors({});
+                  setApiError('');
+                  setSuccessMessage('');
+                }}
+                className="ml-2 text-blue-600 font-semibold hover:text-blue-800 hover:underline transition-colors"
+              >
+                {isLogin ? "S'inscrire" : "Se connecter"}
+              </button>
+            </p>
+          </div>
         </div>
       </div>
 
