@@ -11,6 +11,7 @@ import ProfilePage from './composents/ProfilePage';
 import NotFoundPage from './composents/NotFoundPage';
 import AdminLayout from './composents/AdminLayout';
 import AdminDashboard from './composents/AdminDashboard';
+import BlogDetail from './composents/BlogDetail';
 // import AdminUsers from './composents/AdminUsers';
 
 function App() {
@@ -18,17 +19,20 @@ function App() {
     <>
       <NavbarSelector />
       <Routes>
-        {/* Routes publiques */}
+        {/* ✅ Routes publiques */}
         <Route path="/" element={<HeroSection />} />
         <Route path="/annuaire" element={<SchoolsSection />} />
         <Route path="/connexion" element={<ConnexionPage />} />
-        <Route path="/blog" element={<BlogPage />} />
         
-        {/* Routes protégées */}
+        {/* ✅ Routes Blog - EN DEHORS de /admin */}
+        <Route path="/blog" element={<BlogPage />} />
+        <Route path="/blog/:slug" element={<BlogDetail />} />
+        
+        {/* ✅ Routes protégées */}
         <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
         <Route path="/questionnaire" element={<ProtectedRoute><QuestionnaireSection /></ProtectedRoute>} />
         
-        {/* Routes Admin */}
+        {/* ✅ Routes Admin - CORRIGÉES */}
         <Route 
           path="/admin" 
           element={
@@ -38,13 +42,18 @@ function App() {
           }
         >
           <Route index element={<AdminDashboard />} />
-          {/* <Route path="users" element={<AdminUsers />} />
+          {/* ❌ SUPPRIMEZ ces routes qui causent le conflit */}
+          {/* <Route path="/blog" element={<BlogPage />} />  */}
+          {/* <Route path="/blog/:slug" element={<BlogDetail />} /> */}
+          
+          {/* ✅ Routes Admin relatives (sans / au début) */}
+          {/* <Route path="users" element={<div>Gestion des utilisateurs (à venir)</div>} />
           <Route path="students" element={<div>Gestion des étudiants (à venir)</div>} />
           <Route path="schools" element={<div>Gestion des écoles (à venir)</div>} /> */}
           <Route path="profile" element={<ProfilePage />} />
         </Route>
         
-        {/* Route 404 */}
+        {/* ✅ Route 404 */}
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </>
